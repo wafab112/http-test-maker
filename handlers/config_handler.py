@@ -5,7 +5,8 @@ from jproperties import Properties
 
 class ConfigHandler:
 
-    def __init__(self, configs: Properties):
+    def __init__(self, parser: argparse.ArgumentParser, configs: Properties):
+        self.parser = parser
         self.configs = configs
 
         if not pathlib.Path.exists(consts.CONFIG_PATH):
@@ -18,12 +19,16 @@ class ConfigHandler:
             self.configs.load(configFile)
 
     def handle(self, args: argparse.Namespace):
+        hadArgument = False
+
         if args.get_location:
             print(str(consts.CONFIG_PATH))
+            hadArgument = True
 
         if args.list:
             print("Listing current config.")
             self.list_config()
+            hadArgument = True
 
         if args.recreate:
             if args.assume_yes:
@@ -43,18 +48,26 @@ class ConfigHandler:
                 if confirmation.lower() == "y":
                     self.delete_config_file()
                     self.create_config_file()
+            hadArgument = True
 
         if args.password:
             old = self.configs["default.password"]
             self.configs["default.password"] = args.password
             self.safe_config()
             print(f"set old default password ({old[0]}) to '{args.password}'")
+            hadArgument = True
 
         if args.user:
             old = self.configs["default.user"]
             self.configs["default.user"] = args.user
             self.safe_config()
             print(f"set old default user ({old[0]}) to '{args.user}'")
+            hadArgument = True
+
+        if not hadArgument:
+            print("No argmuents given")
+            self.parser.print_help()
+
 
     def delete_config_file(self):
         if consts.CONFIG_PATH.exists():
